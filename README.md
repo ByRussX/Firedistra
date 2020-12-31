@@ -1,10 +1,13 @@
 # Firedistra
 A shitty 2D Game Engine using C++ and SDL2 that I'm building on my spare time.
 
+![alt text](https://github.com/ByRussX/Firedistra/blob/master/extras/big-logo.png)
+
+
 # Tools used
 `GCC` 8.3.0 (I used `MinGW` http://www.mingw.org/)
 
-`SDL2` (Included <a href = https://github.com/ByRussX/Firedistra/tree/master/dependencies>here</a>, but here is the link to the download site https://www.libsdl.org/download-2.0.php)
+`SDL2` (Included in <a href = https://github.com/ByRussX/Firedistra/tree/master/dependencies>dependencies</a>, but here is the link to the download site https://www.libsdl.org/download-2.0.php)
 
 # Commands to build
 Build Debug:

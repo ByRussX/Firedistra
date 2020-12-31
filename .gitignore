@@ -23,3 +23,7 @@
 # Sublime Text 3 Project Files
 *.sublime-project
 *.sublime-workspace
+
+# DLLs on bin
+bin/debug*.dll
+bin/release*.dll

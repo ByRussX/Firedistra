@@ -25,5 +25,5 @@
 *.sublime-workspace
 
 # DLLs on bin
-bin/debug*.dll
-bin/release*.dll
+bin/debug/*.dll
+bin/release/*.dll

@@ -12,7 +12,6 @@ class Game
 
 		std::vector<Entity *> objectList; // List of entities to be rendered
 
-
 		Game(const char * title, int x_pos, int y_pos, int width, int height, bool fullscreen, int extraFlags = 0); // Constructor
 		~Game(); // Destructor
 
@@ -43,7 +42,7 @@ class Game
 
 		} KeypadHandler; // Handler for direction
 
-		
+
 		// Key assigment
 		SDL_Keycode UP_KEY;
 		SDL_Keycode DOWN_KEY;

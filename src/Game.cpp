@@ -107,7 +107,6 @@ void Game::handleEvents() // Handle the events
 			input.right = (event.key.keysym.sym == RIGHT_KEY) ? false : input.right;
 			break;
 
-
 		default: // Default case, do nothing
 			break;
 	}

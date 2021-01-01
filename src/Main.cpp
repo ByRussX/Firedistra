@@ -12,29 +12,35 @@ int main(int argc, char ** argv)
 {
 	srand(time(NULL));
 
+
+	const int FPS = 60;
+	const int frameDelay = 1000 / FPS;
+	unsigned int frameStart = 0;
+	int deltaTime = 0;
+
 	Game * game = new Game("Firedistra", -1, -1, 800, 600, false);
 
-	SDL_Texture * bob_texture = game->loadTexture("res/noob_boi.png");
-	SDL_Texture * bob_texture_right = game->loadTexture("res/noob_boi_right.png");
-	SDL_Texture * bob_texture_left = game->loadTexture("res/noob_boi_left.png");
-	SDL_Texture * bob_texture_up = game->loadTexture("res/noob_boi_up.png");
-	SDL_Texture * bob_texture_down = game->loadTexture("res/noob_boi_down.png");
+	SDL_Texture * kuby_texture = game->loadTexture("res/kuby_sheet.png");
 
-	Entity * player = new Entity("Bob", 0, 0, bob_texture, 800, 600);
-
-	player->textures.push_back(bob_texture);
-	player->textures.push_back(bob_texture_up);
-	player->textures.push_back(bob_texture_down);
-	player->textures.push_back(bob_texture_left);
-	player->textures.push_back(bob_texture_right);
+	Entity * player = new Entity("Kuby", 0, 0, 128, 128, kuby_texture, 32, 32);
 
 	game->objectList.push_back(player);
 
 	while (game->running() && !game->checkError())
 	{
+		frameStart = SDL_GetTicks();
+
 		game->handleEvents();
 		game->update();
 		game->render();
+
+
+		deltaTime = SDL_GetTicks() - frameStart;
+
+		if (frameDelay > deltaTime)
+		{
+			SDL_Delay(frameDelay - deltaTime);
+		}
 	}
 
 	if (game->checkError())

@@ -9,57 +9,29 @@ class Entity
 {
 	public:
 
-		std::vector<SDL_Texture *> textures; // Sprite textures
+		std::string name; // Entity name
 
-		Entity(const std::string name, float x, float y, SDL_Texture * texture, float width, float height);
+		Entity(const std::string name, int x, int y, int width, int height, SDL_Texture * p_textureSheet, int p_real_width, int p_real_heigh); // Constructor
+		~Entity();
 
-		inline SDL_Texture * getTexture() // Getter for texture
-		{
-			return texture;
-		}
+		// Texture and sprite sheet functions
 
-		inline void setOuterTexture(SDL_Texture * newTex, float width, float height) // Set the texture
-		{
-			texture = newTex;
+		void setTextureSheet(SDL_Texture * newTex); // Set the texture sheet
+		void setSprite(int xx, int y, int w, int h); // Set the texture from texture sheet
+		SDL_Texture * getTexture(); // Getter for texture
+		SDL_Rect getSrc(); // Getter for src
 
-			src.w = width;
-			dst.w = width;
+		// Position functions
 
-			src.h = height;
-			dst.h = height;
-		}
-
-		inline void setTexture(int index) // Set the texture from inside
-		{
-			texture = textures[index];
-		}
-
-		inline SDL_Rect getSrc() // Getter for src
-		{
-			return src;
-		}
-
-		inline SDL_Rect getDst() // Getter for dst
-		{
-			return dst;
-		}
-
-		inline void move(float x, float y) // Move with offset
-		{
-			dst.x += x;
-			dst.y += y;
-		}
-
-		inline void setPos(float x, float y) // Set position
-		{
-			dst.x = x;
-			dst.y = y;
-		}
+		void move(int x, int y); // Move with offset
+		void scale(int scale); // Scale the sprite
+		void setPos(int x, int y); // Set absolute position
+		void setSize(int w, int h); // Set absolute position
+		SDL_Rect getDst(); // Getter for dst
 
 	private:
-		std::string name; // Entity name
 		SDL_Rect src; // Source point to draw
 		SDL_Rect dst; // Destination point to draw
-		SDL_Texture * texture; // Entity texture
+		SDL_Texture * textureSheet; // Entity texture sheet
 
 };

@@ -1,11 +1,22 @@
 #include "Game.hpp"
 
-Game::Game(const char * title, int x_pos, int y_pos, int width, int height, bool fullscreen, int extraFlags)
+Game::Game(const char * title, int x_pos, int y_pos, int width, int height, bool fullscreen, int extraFlags) // Constructor
 {
+
+	UP_KEY = SDLK_UP;
+	DOWN_KEY = SDLK_DOWN;
+	LEFT_KEY = SDLK_LEFT;
+	RIGHT_KEY = SDLK_RIGHT;
+
 	counter = 0; // Set varaibles to zero
 	isRunning = false;
 	window = nullptr;
 	errorInfo = "";
+
+	input.up = false;
+	input.down = false;
+	input.left = false;
+	input.right = false;
 
 	int flags = 0; // Total flags for the window
 
@@ -62,7 +73,7 @@ Game::Game(const char * title, int x_pos, int y_pos, int width, int height, bool
 	}
 }
 
-Game::~Game()
+Game::~Game() // Destructor
 {
 	SDL_DestroyWindow(window); // Destroy the window
 	SDL_DestroyRenderer(renderer); // Destroy the renderer
@@ -71,7 +82,7 @@ Game::~Game()
 	std::cout << "Quitting..." << std::endl;
 }
 
-void Game::handleEvents()
+void Game::handleEvents() // Handle the events
 {
 	SDL_Event event; // Game events variable
 	SDL_PollEvent(&event); // Poll for events
@@ -82,84 +93,47 @@ void Game::handleEvents()
 			isRunning = false;
 			break;
 
+		case SDL_KEYDOWN: // If key is pressed
+			input.up = (event.key.keysym.sym == UP_KEY) ? true : input.up;
+			input.down = (event.key.keysym.sym == DOWN_KEY) ? true : input.down;
+			input.left = (event.key.keysym.sym == LEFT_KEY) ? true : input.left;
+			input.right = (event.key.keysym.sym == RIGHT_KEY) ? true : input.right;
+			break;
+
+		case SDL_KEYUP: // If key is released
+			input.up = (event.key.keysym.sym == UP_KEY) ? false : input.up;
+			input.down = (event.key.keysym.sym == DOWN_KEY) ? false : input.down;
+			input.left = (event.key.keysym.sym == LEFT_KEY) ? false : input.left;
+			input.right = (event.key.keysym.sym == RIGHT_KEY) ? false : input.right;
+			break;
+
+
 		default: // Default case, do nothing
 			break;
 	}
-
-	if (event.key.keysym.sym == SDLK_RIGHT)
-	{
-		switch(event.type)
-		{
-			case SDL_KEYDOWN:
-				std::cout << "Right arrow up" << std::endl;
-				objectList[0]->setTexture(4);
-				break;
-
-			case SDL_KEYUP:
-				std::cout << "Right arrow down" << std::endl;
-				objectList[0]->setTexture(0);
-				break;
-		}
-	}
-
-	else if (event.key.keysym.sym == SDLK_LEFT)
-	{
-		switch(event.type)
-		{
-			case SDL_KEYDOWN:
-				std::cout << "Left arrow up" << std::endl;
-				objectList[0]->setTexture(3);
-				break;
-
-			case SDL_KEYUP:
-				std::cout << "Left arrow down" << std::endl;
-				objectList[0]->setTexture(0);
-				break;
-		}
-	}
-
-	else if (event.key.keysym.sym == SDLK_UP)
-	{
-		switch(event.type)
-		{
-			case SDL_KEYDOWN:
-				std::cout << "Up arrow up" << std::endl;
-				objectList[0]->setTexture(1);
-				break;
-
-			case SDL_KEYUP:
-				std::cout << "Up arrow down" << std::endl;
-				objectList[0]->setTexture(0);
-				break;
-		}
-	}
-
-	else if (event.key.keysym.sym == SDLK_DOWN)
-	{
-		switch(event.type)
-		{
-			case SDL_KEYDOWN:
-				std::cout << "Down arrow up" << std::endl;
-				objectList[0]->setTexture(2);
-				break;
-
-			case SDL_KEYUP:
-				std::cout << "Down arrow down" << std::endl;
-				objectList[0]->setTexture(0);
-				break;
-		}
-	}
 }
 
-void Game::update()
+void Game::update() // Update the entities
 {
-	
+
 	// std::cout << counter << std::endl; // The counter is printed to debug console
+
+	if (input.right)
+	{
+		objectList[0]->move(5, 0);
+		objectList[0]->setSprite(32, 0, 32, 32);
+	}
+	if (input.left)
+	{
+		objectList[0]->move(-5, 0);
+		objectList[0]->setSprite(0, 32, 32, 32);
+	}
+
 
 	counter++; // The counter is increased
 }
 
-void Game::render()
+void Game::render() // Draw the entities
 {
 	SDL_RenderClear(renderer); // Clear the renderer
 	// Start rendering
@@ -176,11 +150,33 @@ void Game::render()
 
 }
 
+bool Game::running() // isRunning getter
+{
+	return isRunning;
+}
+
+std::string Game::getError() // errorInfo getter
+{
+	return errorInfo;
+}
+
+bool Game::checkError() // Check if there is an error
+{
+	if (errorInfo == "")
+	{
+		return false;
+	}
+	else
+	{
+		return true;
+	}
+}
+
 SDL_Texture * Game::loadTexture(const char * filePath)
 {
 	SDL_Surface * tmpSurface = IMG_Load(filePath); // Load Surface from PNG
 	SDL_Texture * texture = SDL_CreateTextureFromSurface(renderer, tmpSurface);  // Load Texture from Surface
-	
+	SDL_FreeSurface(tmpSurface);
 
 	return texture;
 }

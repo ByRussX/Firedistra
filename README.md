@@ -31,7 +31,7 @@ The only thing is that for both Linux and MacOS you will have to download and in
 Good luck.
 
 # Contact
-If you need help with something, you can contact me on Discord (https://discord.com/9FFhUvx)
+If you need help with something, you can contact me on Discord (https://discord.gg/9FFhUvx)
 
 Don't get to high hopes tho. I am also a noob, so ask on StackOverflow (suggestion)
 

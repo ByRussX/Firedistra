@@ -1,5 +1,6 @@
 #include "RenderWindow.hpp"
 #include "Entity.hpp"
+#include "Config.hpp"
 
 RenderWindow::RenderWindow(const char * p_title, int p_w, int p_h) : window(NULL), renderer(NULL)
 {
@@ -33,7 +34,7 @@ RenderWindow::RenderWindow(const char * p_title, int p_w, int p_h) : window(NULL
 		std::cout << "Renderer initialized correctly" << std::endl;
 	}
 
-	if (!SDL_SetRenderVSync(renderer, 1))
+	if (Config::Window::ENABLE_VSYNC && !SDL_SetRenderVSync(renderer, 1))
 	{
 		std::cout << "Couldn't activate V-SYNC" << std::endl;
 	}

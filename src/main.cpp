@@ -1,20 +1,16 @@
-//Headers
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
 #include <iostream>
 #include <vector>
-#include <windows.h>
 #include <time.h>
+#include <cmath>
 
-// My headers
 #include "RenderWindow.hpp"
 #include "Entity.hpp"
 #include "Math.hpp"
 #include "Utils.hpp"
 #include "AmogusState.hpp"
-
-#define SPEED 20.0f // px/s
-#define JUMP_STRENGTH 400.0f // px/s
+#include "Config.hpp"
 
 // Exits with code
 void prog_exit(int code)
@@ -25,26 +21,28 @@ void prog_exit(int code)
 	exit(code);
 }
 
-// Creates an instance of amogus
-void instanciateAmogus(std::vector<Entity> & entities, SDL_Texture * amogus)
+// Creates an instance of the entity
+void instanciateEntity(std::vector<Entity> & entities, SDL_Texture * texture)
 {
+	Vector2f spriteSize(Config::Entity::SPRITE_WIDTH, Config::Entity::SPRITE_HEIGHT);
+	Vector2f spawnPosition(rand() % (Config::Window::WIDTH - 256), rand() % (Config::Window::HEIGHT - 256));
+
 	// Push a new entity and get a reference to it
-	entities.emplace_back(Vector2f(150, 178), amogus, Vector2f(rand() % (WINDOW_WIDTH - 256), rand() % (WINDOW_HEIGHT - 256)));
+	entities.emplace_back(spriteSize, texture, spawnPosition);
 
 	Entity & newEntity = entities.back();
 
 	// Set the hitbox
-	newEntity.changeHitbox(
-		Vector2f(0, 0),
-		Vector2f(150, 178)
-	);
+	newEntity.changeHitbox(Vector2f(0, 0), spriteSize);
 
 	// Set the color
 	newEntity.changeRGB(rand() % 256, rand() % 256, rand() % 256);
 
-	// Set the velocity
-	newEntity.entityVelocity.x = ((rand() % 2 == 0) ? -1 : 1) * (100 + (rand() % (int) SPEED) * 10);
-	newEntity.entityVelocity.y = ((rand() % 2 == 0) ? -1 : 1) * (100 + (rand() % (int) SPEED) * 100);
+	float dirX = (rand() % 2 == 0) ? -1.0f : 1.0f;
+	float dirY = (rand() % 2 == 0) ? -1.0f : 1.0f;
+	Vector2f dir(dirX, dirY);
+
+	newEntity.entityVelocity = dir.normalized() * Config::Entity::INITIAL_SPEED;
 }
 
 // Main function
@@ -67,8 +65,8 @@ int main(int argc, char * argv[])
 	}
 
 	// Initialize the window and textures
-	RenderWindow window("AmogusJuego Rebuild SDL3", WINDOW_WIDTH, WINDOW_HEIGHT); // Create Window
-	SDL_Texture * amogus = window.loadTexture("res/textures/sprite.png");
+	RenderWindow window("AmogusJuego Rebuild SDL3", Config::Window::WIDTH, Config::Window::HEIGHT); // Create Window
+	SDL_Texture * amogus = window.loadTexture(Config::Entity::DEFAULT_TEXTURE_PATH);
 
 	if (!amogus)
 	{
@@ -81,7 +79,6 @@ int main(int argc, char * argv[])
 
 	bool gameRunning = true;
 	float currentTime = Utils::hireTimeInSeconds();
-	const float TARGET_DELTATIME = 1.0f / 120.0f;
 
 	while (gameRunning)
 	{
@@ -106,24 +103,21 @@ int main(int argc, char * argv[])
 				// Generate a single sprite when the space is pressed
 				if (event.key.key == SDLK_SPACE && !event.key.repeat)
 				{
-					instanciateAmogus(entities, amogus);
+					instanciateEntity(entities, amogus);
 				}
 			}
 		}
 
 		moved = true;
 
-		for (Entity & e : entities)
-		{
-			e.update(moved, deltaTime);
-		}
+		for (Entity & e : entities) e.update(moved, deltaTime);
 
 		// Entity collisions
 		for (int frame = 0; frame < 2; frame++)
 		{
-			for (int i = 0; i < entities.size(); i++)
+			for (size_t i = 0; i < entities.size(); i++)
 			{
-				for (int j = i + 1; j < entities.size(); j++)
+				for (size_t j = i + 1; j < entities.size(); j++)
 				{
 					entities[i].resolveEntityCollision(entities[j]);
 				}
@@ -137,9 +131,9 @@ int main(int argc, char * argv[])
 
 		// Limit FPS
 		float frameTime = Utils::hireTimeInSeconds() - newTime;
-		if (frameTime < TARGET_DELTATIME)
+		if (frameTime < Config::Window::TARGET_DELTATIME)
 		{
-			SDL_Delay((TARGET_DELTATIME - frameTime) * 1000.0f);
+			SDL_Delay((Config::Window::TARGET_DELTATIME - frameTime) * 1000.0f);
 		}
 	}
 

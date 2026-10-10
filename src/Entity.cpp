@@ -23,8 +23,8 @@ Entity::Entity(Vector2f p_textureSize, SDL_Texture * p_spriteSheet, Vector2f p_s
 
 	entityPosition.x = p_screenPos.x;
 	entityPosition.y = p_screenPos.y;
-	entityPosition.w = textureSize.x * SCALE;
-	entityPosition.h = textureSize.y * SCALE;
+	entityPosition.w = textureSize.x * Config::Entity::SCALE;
+	entityPosition.h = textureSize.y * Config::Entity::SCALE;
 
 	entityVelocity.x = 0.0f;
 	entityVelocity.y = 0.0f;
@@ -42,8 +42,8 @@ Entity::Entity(Vector2f p_textureSize, SDL_Texture * p_spriteSheet, Vector2f p_s
 
 void Entity::changeHitbox(Vector2f offset, Vector2f size)
 {
-	entityHitbox.setOffset(Vector2f(offset.x * SCALE, offset.y * SCALE));
-	entityHitbox.setSize(Vector2f(size.x * SCALE, size.y * SCALE));
+	entityHitbox.setOffset(Vector2f(offset.x * Config::Entity::SCALE, offset.y * Config::Entity::SCALE));
+	entityHitbox.setSize(Vector2f(size.x * Config::Entity::SCALE, size.y * Config::Entity::SCALE));
 }
 
 Vector2f Entity::getHitboxOffset()
@@ -65,8 +65,8 @@ int Entity::obtainTextureOffsets() // Calculate the offsets for the various text
 
 	if (std::fmod(spreadSheetWidth, textureSize.x) < 1e-6f && std::fmod(spreadSheetHeight, textureSize.y) < 1e-6f) // Verify that the texture size divides evenly into the spritesheet size
 	{
-		int texturesRows = static_cast<int>(spreadSheetHeight / textureSize.y);
-		int texturesColumns = static_cast<int>(spreadSheetWidth / textureSize.x);
+		int texturesRows = static_cast<int> (spreadSheetHeight / textureSize.y);
+		int texturesColumns = static_cast<int> (spreadSheetWidth / textureSize.x);
 
 		for (int row = 0; row < texturesRows; row++)
 		{
@@ -109,56 +109,56 @@ void Entity::physicsEffects(float deltaTime)
 {
 	if (!grounded) // Gravity and air resistance
 	{
-		entityVelocity.x -= entityVelocity.x * AIR_DRAG * deltaTime;
-		entityVelocity.y += GRAVITY * deltaTime;
+		entityVelocity.x -= entityVelocity.x * Config::Physics::AIR_DRAG * deltaTime;
+		entityVelocity.y += Config::Physics::GRAVITY * deltaTime;
 	}
 
 	else // Friction
 	{
 		if (entityVelocity.x != 0.0f) // If moving
 		{
-			entityVelocity.x = std::abs(entityVelocity.x) >= 0.5f ? entityVelocity.x - std::copysign(1.0f, entityVelocity.x) * FRICTION * deltaTime : 0.0f;
+			entityVelocity.x = std::abs(entityVelocity.x) >= 0.5f ? entityVelocity.x - std::copysign(1.0f, entityVelocity.x) * Config::Physics::FRICTION * deltaTime : 0.0f;
 		}
 	}
-
-	if (std::abs(entityVelocity.x) < 0.5f) entityVelocity.x = 0.0f;
-	if (std::abs(entityVelocity.y) < 1.5f) entityVelocity.y = 0.0f;
 }
 
 void Entity::calculateCollisions(float deltaTime)
 {
 	grounded = false;
 
-	Vector2f newPosition;
+	Vector2f currentPos(entityPosition.x, entityPosition.y);
+	Vector2f newPosition = currentPos + entityVelocity * deltaTime;
 
-	newPosition.x = entityPosition.x + entityVelocity.x * deltaTime;
-	newPosition.y = entityPosition.y + entityVelocity.y * deltaTime;
+	Vector2f hitboxOffset = entityHitbox.getOffset();
+	Vector2f hitboxSize = entityHitbox.getSize();
 	
-	if (newPosition.y + entityHitbox.getOffset().y + entityHitbox.getSize().y >= WINDOW_HEIGHT) // Ground collision
+	// Ground collision
+	if (newPosition.y + hitboxOffset.y + hitboxSize.y >= Config::Window::HEIGHT)
 	{
-		newPosition.y = WINDOW_HEIGHT - entityHitbox.getSize().y - entityHitbox.getOffset().y;
-		entityVelocity.y = std::abs(entityVelocity.y) >= 1.5f ? 0.0f - entityVelocity.y * RESITUTION : 0.0f;
+		newPosition.y = Config::Window::HEIGHT - hitboxSize.y - hitboxOffset.y;
+		entityVelocity.y = -entityVelocity.y * Config::Physics::RESTITUTION;
 
 		grounded = true;
 	}
 
-	if (newPosition.y + entityHitbox.getOffset().y <= 0.0f) // Ceilling collision
+	// Ceiling collision
+	if (newPosition.y + hitboxOffset.y <= 0.0f)
 	{
-		newPosition.y = 0.0f - entityHitbox.getOffset().y;
-		entityVelocity.y = 0.0f;
+		newPosition.y = 0.0f - hitboxOffset.y;
+		entityVelocity.y = -entityVelocity.y * Config::Physics::RESTITUTION;
 	}
 
-	if (newPosition.x + entityHitbox.getOffset().x <= 0.0f) // Left wall collision
+	if (newPosition.x + hitboxOffset.x <= 0.0f) // Left wall collision
 	{
-		newPosition.x = 0.0f - entityHitbox.getOffset().x;
-		entityVelocity.x = -entityVelocity.x * RESITUTION;
+		newPosition.x = 0.0f - hitboxOffset.x;
+		entityVelocity.x = -entityVelocity.x * Config::Physics::RESTITUTION;
 		this->changeState(AmogusState::LEFT);
 	}
 
-	if (newPosition.x + entityHitbox.getOffset().x + entityHitbox.getSize().x >= WINDOW_WIDTH) // Right wall collision
+	if (newPosition.x + hitboxOffset.x + hitboxSize.x >= Config::Window::WIDTH) // Right wall collision
 	{
-		newPosition.x = WINDOW_WIDTH - entityHitbox.getSize().x - entityHitbox.getOffset().x;
-		entityVelocity.x = -entityVelocity.x * RESITUTION;
+		newPosition.x = Config::Window::WIDTH - hitboxSize.x - hitboxOffset.x;
+		entityVelocity.x = -entityVelocity.x * Config::Physics::RESTITUTION;
 		this->changeState(AmogusState::RIGHT);
 	}
 

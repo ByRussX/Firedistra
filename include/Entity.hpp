@@ -7,13 +7,7 @@
 #include "Math.hpp"
 #include "AmogusState.hpp"
 #include "Hitbox.hpp"
-
-#define GRAVITY 490.5f // Gravity acceleration in px/s^2
-#define AIR_DRAG 0.0f // Air resistance
-#define FRICTION 00.0f // Friction acceleration
-#define RESITUTION 1.0f // Elastic coefficient
-
-#define SCALE 1.0f // Scale
+#include "Config.hpp"
 
 class Entity
 {

@@ -3,11 +3,15 @@
 
 namespace Utils
 {
-	inline float hireTimeInSeconds()
-	{
-		float t = SDL_GetTicks();
-		t *= 0.001f;
+    // Returns time in seconds with high precision using SDL3 nanoseconds timer
+    inline double getTimeInSeconds()
+    {
+        return static_cast<double>(SDL_GetTicksNS()) * 1e-9;
+    }
 
-		return t;
-	}
+    // Alias for backwards compatibility
+    inline double hireTimeInSeconds()
+    {
+        return getTimeInSeconds();
+    }
 }

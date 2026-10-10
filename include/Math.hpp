@@ -1,46 +1,124 @@
 #pragma once
 #include <iostream>
-#include <SDL3/SDL.h>
-#include <SDL3_image/SDL_image.h>
 #include <cmath>
 
 class Vector2f
 {
 public:
-    float x, y;
+    float x;
+    float y;
     
     constexpr Vector2f(float p_x = 0.0f, float p_y = 0.0f) : x(p_x), y(p_y) {}
 
     // Operator overloading
-    Vector2f operator+(const Vector2f & other) const
-	{
-		return Vector2f(x + other.x, y + other.y);
-	
-	}
-    Vector2f operator-(const Vector2f & other) const
-	{
-		return Vector2f(x - other.x, y - other.y);
-	
-	}
-    Vector2f operator*(const float scalar) const
-	{
-		return Vector2f(x * scalar, y * scalar);
-	}
+    constexpr Vector2f operator+(const Vector2f & other) const
+    {
+        return Vector2f(x + other.x, y + other.y);
+    }
 
-    Vector2f & operator+=(const Vector2f& other)
-	{
-		x += other.x; y += other.y;
-		return * this;
-	}
+    constexpr Vector2f operator-(const Vector2f & other) const
+    {
+        return Vector2f(x - other.x, y - other.y);
+    }
 
+    constexpr Vector2f operator-() const
+    {
+        return Vector2f(-x, -y);
+    }
+
+    constexpr Vector2f operator*(float scalar) const
+    {
+        return Vector2f(x * scalar, y * scalar);
+    }
+
+    friend constexpr Vector2f operator*(float scalar, const Vector2f & vec)
+    {
+        return Vector2f(vec.x * scalar, vec.y * scalar);
+    }
+
+    constexpr Vector2f operator/(float scalar) const
+    {
+        return Vector2f(x / scalar, y / scalar);
+    }
+
+    Vector2f & operator+=(const Vector2f & other)
+    {
+        x += other.x;
+        y += other.y;
+        return *this;
+    }
+
+    Vector2f & operator-=(const Vector2f & other)
+    {
+        x -= other.x;
+        y -= other.y;
+        return *this;
+    }
+
+    Vector2f & operator*=(float scalar)
+    {
+        x *= scalar;
+        y *= scalar;
+        return *this;
+    }
+
+    Vector2f & operator/=(float scalar)
+    {
+        x /= scalar;
+        y /= scalar;
+        return *this;
+    }
+
+    constexpr bool operator==(const Vector2f & other) const
+    {
+        return x == other.x && y == other.y;
+    }
+
+    constexpr bool operator!=(const Vector2f & other) const
+    {
+        return !(*this == other);
+    }
+
+    // Vector length
     float length() const
-	{
-		return std::sqrt(x * x + y * y);
-	}
+    {
+        return std::sqrt(x * x + y * y);
+    }
 
+    // Normalized vector
     Vector2f normalized() const
-	{
+    {
         float len = length();
-        return len > 0.0f ? Vector2f(x / len, y / len) : Vector2f(0.0f, 0.0f);
+        if (len > 0.0f)
+        {
+            float invLen = 1.0f / len;
+            return Vector2f(x * invLen, y * invLen);
+        }
+        return Vector2f(0.0f, 0.0f);
+    }
+
+    // Dot product
+    constexpr float dot(const Vector2f & other) const
+    {
+        return x * other.x + y * other.y;
+    }
+
+    // Perpendicular vector
+    constexpr Vector2f perp() const
+    {
+        return Vector2f(-y, x);
+    }
+
+    // Rotate the vector by an angle in radians
+    Vector2f rotate(float angleRad) const
+    {
+        float c = std::cos(angleRad);
+        float s = std::sin(angleRad);
+        return Vector2f(x * c - y * s, x * s + y * c);
+    }
+
+    void print() const
+    {
+        std::cout << x << ", " << y << std::endl;
     }
 };

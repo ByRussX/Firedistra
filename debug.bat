@@ -14,7 +14,7 @@ set OBJ_FILES=
 REM Compilar cada .cpp en src
 for %%f in (src\*.cpp) do (
     echo Compilando %%f
-    g++ -c "%%f" -std=c++14 -g -Wall -I include -I lib\libsdl3\64\include
+    g++ -c "%%f" -std=c++17 -g -Wall -Wextra -I include -I lib\libsdl3\64\include
     set OBJ_FILES=!OBJ_FILES! %%~nf.o
 )
 

@@ -1,8 +1,9 @@
 #pragma once
 #include <SDL3/SDL.h>
 #include <iostream>
-#include <vector>
 #include <cmath>
+#include <array>
+
 #include "Utils.hpp"
 #include "Math.hpp"
 #include "AmogusState.hpp"
@@ -11,62 +12,56 @@
 
 class Entity
 {
-	public:
-		Entity(Vector2f, SDL_Texture *, Vector2f); 			// Constructor
-		
-		void changeHitbox(Vector2f, Vector2f);				// Changes the entity's hitbox
-		Vector2f getHitboxSize();
-		Vector2f getHitboxOffset();
+public:
+    Entity(const Vector2f & p_textureSize, SDL_Texture * p_spriteSheet, const Vector2f & p_screenPos);
 
-		void update(bool, float);							// Update the entity's logic
+    void changeHitbox(const Vector2f & offset, const Vector2f & size);
+    Vector2f getHitboxSize() const;
+    Vector2f getHitboxOffset() const;
 
-		void physicsEffects(float);							// Apply gravity effect to the entity
-		void calculateCollisions(float);					// Check for collisions with other entities
-		void updateTexture(bool);							// Update the texture based on the entity's state
-		void resolveEntityCollision(Entity &);				// Resolve the collision between two entities
+    void update(bool moved, float deltaTime);
 
-		void entityRenderer(SDL_Renderer *); 				// Render the entity to the screen
+    void physicsEffects(float deltaTime);
+    void calculateCollisions(float deltaTime);
+    void resolveEntityCollision(Entity & other);
 
-		void changeState(AmogusState);						// Change the current state of the entity
+    void entityRenderer(SDL_Renderer * renderer);
 
-		SDL_FRect & getScreenPos(); 						// Getter for screenPos
-		SDL_FRect getAbsoluteHitbox();						// Get the absolute position of the hitbox on screen
-		
-		void setPosX(float); 								// Setter for X coordinate of screenPos
-		void setPosY(float); 								// Setter for Y coordinate of screenPos
+    void changeState(AmogusState newState);
 
-		void addVelX(float);								// Add to the X component of entityVelocity
-		void addVelY(float);								// Add to the Y component of entityVelocity
+    const SDL_FRect & getScreenPos() const;
+    SDL_FRect & getScreenPos();
+    SDL_FRect getAbsoluteHitbox() const;
 
-		bool isGrounded();									// Whether the entity is on the ground
+    std::array<Vector2f, 4> getHitboxVertices() const;
 
-		Vector2f entityVelocity; 							// Entity velocity
+    void setPosX(float newX);
+    void setPosY(float newY);
 
-		void changeRGB(int, int, int);						// Set RGB color
-		void addRGB(int, int, int);							// Add RGB color
-	
-	private:
-		int obtainTextureOffsets(); 						// Calculate the offsets for the various textures in the spritesheet
+    void addVelX(float velX);
+    void addVelY(float velY);
 
-		std::vector<std::vector<Vector2f>> textureOffsets; 	// Bidimensional vector containing the texture offsets
+    bool isGrounded() const;
 
-		SDL_FRect entityPosition; 							// Entity position of leftmost corner on screen
-		//Vector2f entityVelocity; 							// Entity velocity
+    Vector2f entityVelocity{0.0f, 0.0f};
 
-		bool grounded;										// Whether the entity is on the ground
-		Hitbox entityHitbox;								// Entity's hitbox
+    void changeRGB(Uint8 r, Uint8 g, Uint8 b);
+    void addRGB(int r, int g, int b);
 
-		Vector2f textureSize; 								// Size of the texture
-		SDL_Texture * spriteSheet; 							// Texture variable
+    SDL_FRect getSourceRect(int col = 0, int row = 0) const;
 
-		AmogusState currentState; 							// Current state of the entity
+private:
+    SDL_FRect entityPosition{0.0f, 0.0f, 0.0f, 0.0f};
+    float entityAngle = 0.0f; // Entity angle in degrees
 
-		int idleFrames;										// Number of frames the entity has been idle
-		int movingFrames;									// Number of frames the entity has been moving
+    bool grounded = false;
+    Hitbox entityHitbox;
 
-		int rgb[3];											// RGB color mask of the entity
-		float colorOffset;									// Color offset of the entity
+    Vector2f textureSize{0.0f, 0.0f};
+    SDL_Texture * spriteSheet = nullptr;
+
+    AmogusState currentState = AmogusState::RIGHT;
+
+    Uint8 rgb[3]{255, 255, 255};
+    float colorOffset = 0.0f;
 };
-
-SDL_FRect getAbsoluteHitbox(Entity&);
-void resolveEntityCollision(Entity &, Entity &);

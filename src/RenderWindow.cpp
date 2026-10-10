@@ -1,95 +1,115 @@
 #include "RenderWindow.hpp"
 #include "Entity.hpp"
 #include "Config.hpp"
+#include <iostream>
 
-RenderWindow::RenderWindow(const char * p_title, int p_w, int p_h) : window(NULL), renderer(NULL)
+RenderWindow::RenderWindow(const char * p_title, int p_w, int p_h)
+    : window(nullptr), renderer(nullptr)
 {
-	window = SDL_CreateWindow(p_title, p_w, p_h, 0); // Create the window
-	SDL_SetWindowBordered(window, true);
+    window = SDL_CreateWindow(p_title, p_w, p_h, 0);
 
-	if (window == NULL) // Check window
-	{
-		std::cout << "RenderWindow::RenderWindow(): SDL_CreateWindow: Window failed to init" << std::endl;
-		std::cout << "SDL_Error: " << SDL_GetError() << std::endl;
-		std::cin.get();
-		this->prog_exit(1);
-	}
-	else
-	{
-		std::cout << "Window initialized correctly" << std::endl;
-	}
+    if (window == nullptr)
+    {
+        std::cerr << "RenderWindow: SDL_CreateWindow failed. SDL_Error: " << SDL_GetError() << std::endl;
+        return;
+    }
 
-	renderer = SDL_CreateRenderer(window, NULL); // Attach the renderer to the window
-	// Create renderer
+    SDL_SetWindowBordered(window, true);
+    std::cout << "Window initialized correctly" << std::endl;
 
-	if (renderer == NULL) // Check window
-	{
-		std::cout << "RenderWindow::RenderWindow(): SDL_CreateRenderer: Renderer failed to init" << std::endl;
-		std::cout << "SDL_Error: " << SDL_GetError() << std::endl;
-		std::cin.get();
-		this->prog_exit(1);
-	}
-	else
-	{
-		std::cout << "Renderer initialized correctly" << std::endl;
-	}
+    renderer = SDL_CreateRenderer(window, nullptr);
+    if (renderer == nullptr)
+    {
+        std::cerr << "RenderWindow: SDL_CreateRenderer failed. SDL_Error: " << SDL_GetError() << std::endl;
+        SDL_DestroyWindow(window);
+        window = nullptr;
+        return;
+    }
 
-	if (Config::Window::ENABLE_VSYNC && !SDL_SetRenderVSync(renderer, 1))
-	{
-		std::cout << "Couldn't activate V-SYNC" << std::endl;
-	}
+    std::cout << "Renderer initialized correctly" << std::endl;
+
+    if (Config::Window::ENABLE_VSYNC && !SDL_SetRenderVSync(renderer, 1))
+    {
+        std::cout << "Couldn't activate V-SYNC: " << SDL_GetError() << std::endl;
+    }
 }
 
-SDL_Texture * RenderWindow::loadTexture(const char * p_filePath) // Load the texture to the renderer
+RenderWindow::~RenderWindow()
 {
-	SDL_Texture * texture = NULL;
-	texture = IMG_LoadTexture(renderer, p_filePath); // Load the texture from PNG file
-
-	if (texture == NULL)
-	{
-		std::cout << "RenderWindow::loadTexture(): IMG_LoadTexture: Failed to load texture" << std::endl;
-		std::cout << "SDL_Error: " << SDL_GetError() << std::endl;
-		std::cin.get();
-		this->prog_exit(1);
-	}
-
-	return texture;
+    destroy();
 }
 
-float RenderWindow::getRefreshRate()
+SDL_Texture * RenderWindow::loadTexture(const char * p_filePath)
 {
-	SDL_DisplayID displayID = SDL_GetDisplayForWindow(window);
-	
-	const SDL_DisplayMode * mode = SDL_GetCurrentDisplayMode(displayID);
+    if (renderer == nullptr)
+    {
+        std::cerr << "RenderWindow::loadTexture: Renderer is null" << std::endl;
+        return nullptr;
+    }
 
-	return mode->refresh_rate;
+    SDL_Texture * texture = IMG_LoadTexture(renderer, p_filePath);
+    if (texture == nullptr)
+    {
+        std::cerr << "RenderWindow::loadTexture: Failed to load texture '" << p_filePath 
+                  << "'. SDL_Error: " << SDL_GetError() << std::endl;
+    }
 
+    return texture;
 }
 
-void RenderWindow::clear() // Clear window
+float RenderWindow::getRefreshRate() const
 {
-	SDL_RenderClear(renderer);
+    if (window == nullptr)
+    {
+        return Config::Window::TARGET_FPS;
+    }
+
+    SDL_DisplayID displayID = SDL_GetDisplayForWindow(window);
+    const SDL_DisplayMode * mode = SDL_GetCurrentDisplayMode(displayID);
+
+    if (mode != nullptr && mode->refresh_rate > 0.0f)
+    {
+        return mode->refresh_rate;
+    }
+
+    return Config::Window::TARGET_FPS;
 }
 
-void RenderWindow::render(Entity & p_entity) // Render texture
+void RenderWindow::clear()
 {
-	p_entity.entityRenderer(renderer);
+    if (renderer != nullptr)
+    {
+        SDL_RenderClear(renderer);
+    }
 }
 
-void RenderWindow::display() // Display the renderer on the window
+void RenderWindow::render(Entity & p_entity)
 {
-	SDL_RenderPresent(renderer);
+    if (renderer != nullptr)
+    {
+        p_entity.entityRenderer(renderer);
+    }
 }
 
-void RenderWindow::destroy() // Destroy the window
+void RenderWindow::display()
 {
-	SDL_DestroyWindow(window);
+    if (renderer != nullptr)
+    {
+        SDL_RenderPresent(renderer);
+    }
 }
 
-void RenderWindow::prog_exit(int code) // Exits with code
+void RenderWindow::destroy()
 {
-	std::cout << "SDL_Quit(): Quiting SDL..." << std::endl;
-	SDL_Quit(); // Quit
-	std::cout << "exit(): Quiting program with code " << code << "..." << std::endl;
-	exit(code);
+    if (renderer != nullptr)
+    {
+        SDL_DestroyRenderer(renderer);
+        renderer = nullptr;
+    }
+
+    if (window != nullptr)
+    {
+        SDL_DestroyWindow(window);
+        window = nullptr;
+    }
 }

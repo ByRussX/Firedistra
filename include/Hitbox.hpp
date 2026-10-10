@@ -5,15 +5,15 @@
 
 class Hitbox
 {
-    public:
+public:
     Hitbox();
 
-    Vector2f getOffset();
-    Vector2f getSize();
+    Vector2f getOffset() const;
+    Vector2f getSize() const;
 
-    void setOffset(Vector2f);
-    void setSize(Vector2f);
+    void setOffset(const Vector2f & offset);
+    void setSize(const Vector2f & size);
 
-    private:
-    SDL_FRect hitbox; // Hitbox rectangle
+private:
+    SDL_FRect hitbox{0.0f, 0.0f, 0.0f, 0.0f}; // Hitbox rectangle
 };

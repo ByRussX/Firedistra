@@ -87,6 +87,7 @@ void RenderWindow::clear()
 {
     if (renderer != nullptr)
     {
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
     }
 }

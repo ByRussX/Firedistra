@@ -81,8 +81,8 @@ void Engine::update(float deltaTime)
     // Iterate all entities
     for (Entity & e : entities)
     {
-        // Update entity visuals
-        e.update();
+        // Update entity visuals and rotational angle
+        e.update(deltaTime);
 
         // Update entity physics
         Physics::applyEnvironment(e, deltaTime);
@@ -106,6 +106,7 @@ void Engine::render()
     for (Entity & e : entities)
     {
         e.render(renderer);
+        e.renderDebug(renderer);
     }
 
     // Show screen contents
@@ -145,6 +146,7 @@ void Engine::instantiateEntity()
     std::uniform_real_distribution<float> distY(0.0f, std::max(0.0f, Config::Window::HEIGHT - scaledH));
     std::uniform_int_distribution<int> distColor(0, 255);
     std::uniform_int_distribution<int> distSign(0, 1);
+    // std::uniform_real_distribution<float> distSpin(-2.0f, 2.0f);
 
     // Calculate sprite size and spawn position
     Vector2f spriteSize(Config::Entity::SPRITE_WIDTH, Config::Entity::SPRITE_HEIGHT);
@@ -167,7 +169,8 @@ void Engine::instantiateEntity()
     float dirY = (distSign(rng) == 0) ? -1.0f : 1.0f;
     Vector2f dir(dirX, dirY);
 
-    // Add the velocity
+    // Add velocity and initial angular spin
     newEntity.velocity.x += dir.normalized().x * Config::Entity::INITIAL_SPEED;
     newEntity.velocity.y += dir.normalized().y * Config::Entity::INITIAL_SPEED;
+    newEntity.angularVelocity = 0.0;
 }

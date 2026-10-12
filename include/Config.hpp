@@ -16,11 +16,15 @@ namespace Config
     // Global physics parameters
     namespace Physics
     {
-        constexpr float GRAVITY = 0.0f;       // px/s^2 (0.0f para velocidad constante estilo DVD)
-        constexpr float AIR_DRAG = 0.0f;      // Resistencia del aire
-        constexpr float FRICTION = 0.0f;      // Rozamiento con el suelo
-        constexpr float RESTITUTION = 1.0f;   // Rebote elástico (1.0f = 100% de conservación de energía)
-        constexpr float MAX_DELTA_TIME = 0.05f; // Evita tunneling en caídas de frames o tirones
+        constexpr float GRAVITY = 0.0f;             // Gravity acceleration in px/s^2
+        constexpr float AIR_DRAG = 0.0f;            // Air resistance
+        constexpr float FRICTION = 0.0f;            // Ground friction
+        constexpr float RESTITUTION = 1.0f;         // Elastic restitution
+        constexpr float MAX_DELTA_TIME = 0.05f;     // Avoid tunneling in frame drops
+        constexpr float ANGULAR_DRAG = 0.2f;        // Angular drag
+        constexpr float CONTACT_FRICTION = 0.15f;   // Tangential contact friction
+        constexpr float DEFAULT_MASS = 1.0f;        // Default sprite mass
+        constexpr float MAX_ANGULAR_SPEED = 25.0f;  // Maximum angular speed
     }
 
     // Default entity parameters

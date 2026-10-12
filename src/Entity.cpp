@@ -4,13 +4,15 @@
 #include <cmath>
 #include <algorithm>
 
-Entity::Entity(const Vector2f & textureSize, SDL_Texture * spriteSheet, const Vector2f & spawnPos, float mass)
+Entity::Entity(const Vector2f & textureSize, SDL_Texture * spriteSheet, const Vector2f & spawnPos, float mass, bool isStatic, bool freezeRotation)
     : velocity(0.0f, 0.0f),
       angle(0.0f),
       angularVelocity(0.0f),
       grounded(false),
+      isStatic(isStatic),
+      freezeRotation(freezeRotation),
       mass(mass),
-      invMass(mass > 0.0f ? 1.0f / mass : 0.0f),
+      invMass(0.0f),
       inertia(1.0f),
       invInertia(1.0f),
       flipped(false),
@@ -39,32 +41,46 @@ void Entity::updateInertia()
     float w = size.x > 0.0f ? size.x : position.w;
     float h = size.y > 0.0f ? size.y : position.h;
 
-    if (mass > 0.0f)
+    if (!isStatic && mass > 0.0f)
     {
         invMass = 1.0f / mass;
         inertia = (1.0f / 12.0f) * mass * (w * w + h * h);
-        invInertia = inertia > 0.0f ? 1.0f / inertia : 0.0f;
+        invInertia = (!freezeRotation && inertia > 0.0f) ? (1.0f / inertia) : 0.0f;
     }
-    
     else
     {
         invMass = 0.0f;
         inertia = 0.0f;
         invInertia = 0.0f;
+        velocity = Vector2f(0.0f, 0.0f);
+        angularVelocity = 0.0f;
+    }
+
+    if (freezeRotation)
+    {
+        invInertia = 0.0f;
+        angularVelocity = 0.0f;
     }
 }
 
 // Update entity visuals and integrate rotational angle
 void Entity::update(float deltaTime)
 {
-    // Rotate dynamically according to physical angular velocity (rad/s to degrees)
-    angle += (angularVelocity * Math::RAD_TO_DEG) * deltaTime;
-    
-    // Normalize angle into [0, 360)
-    angle = std::fmod(angle, 360.0f);
-    if (angle < 0.0f)
+    // Rotate dynamically according to physical angular velocity only if rotation is not frozen and entity is not static
+    if (!freezeRotation && !isStatic)
     {
-        angle += 360.0f;
+        angle += (angularVelocity * Math::RAD_TO_DEG) * deltaTime;
+        
+        // Normalize angle into [0, 360)
+        angle = std::fmod(angle, 360.0f);
+        if (angle < 0.0f)
+        {
+            angle += 360.0f;
+        }
+    }
+    else
+    {
+        angularVelocity = 0.0f;
     }
 
     // Change sprite color using sine waves
@@ -131,6 +147,29 @@ Vector2f Entity::getCenter() const
     Vector2f size = hitbox.getSize();
     return Vector2f(position.x + offset.x + size.x * 0.5f,
                     position.y + offset.y + size.y * 0.5f);
+}
+
+// Set whether the entity is static (fixed in place) or dynamic
+void Entity::setStatic(bool staticState)
+{
+    isStatic = staticState;
+    if (isStatic)
+    {
+        velocity = Vector2f(0.0f, 0.0f);
+        angularVelocity = 0.0f;
+    }
+    updateInertia();
+}
+
+// Set whether the entity's rotation is locked/frozen
+void Entity::setFreezeRotation(bool freezeRot)
+{
+    freezeRotation = freezeRot;
+    if (freezeRotation)
+    {
+        angularVelocity = 0.0f;
+    }
+    updateInertia();
 }
 
 // Get absolute position for the hitbox vertices on screen

@@ -31,9 +31,9 @@ namespace Config
     namespace Entity
     {
         constexpr const char * DEFAULT_TEXTURE_PATH = "res/textures/sprite.png";
-        constexpr float SPRITE_WIDTH = 150.0f;
-        constexpr float SPRITE_HEIGHT = 178.0f;
-        constexpr float SCALE = .2f;
+        constexpr float SPRITE_WIDTH = 1048.0f;
+        constexpr float SPRITE_HEIGHT = 1333.0f;
+        constexpr float SCALE = .1f;
         constexpr float INITIAL_SPEED = 1000.0f;
     }
 }

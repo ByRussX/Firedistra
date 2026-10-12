@@ -66,10 +66,22 @@ void Engine::handleEvents()
                 running = false;
             }
             
-            // Space pressed, instantiate entity
+            // Space pressed, instantiate dynamic entity
             if (event.key.key == SDLK_SPACE && !event.key.repeat)
             {
-                instantiateEntity();
+                instantiateEntity(false, false);
+            }
+
+            // F pressed, instantiate static / fixed entity
+            if (event.key.key == SDLK_F && !event.key.repeat)
+            {
+                instantiateEntity(true, true);
+            }
+
+            // R pressed, instantiate dynamic entity with frozen rotation (does not spin)
+            if (event.key.key == SDLK_R && !event.key.repeat)
+            {
+                instantiateEntity(false, true);
             }
         }
     }
@@ -106,7 +118,7 @@ void Engine::render()
     for (Entity & e : entities)
     {
         e.render(renderer);
-        e.renderDebug(renderer);
+        // e.renderDebug(renderer);
     }
 
     // Show screen contents
@@ -135,7 +147,7 @@ void Engine::clean()
 }
 
 // Creates an instance of an entity
-void Engine::instantiateEntity()
+void Engine::instantiateEntity(bool isStatic, bool freezeRotation)
 {
     // Apply scale to sprite dimension
     float scaledW = Config::Entity::SPRITE_WIDTH * Config::Entity::SCALE;
@@ -146,14 +158,13 @@ void Engine::instantiateEntity()
     std::uniform_real_distribution<float> distY(0.0f, std::max(0.0f, Config::Window::HEIGHT - scaledH));
     std::uniform_int_distribution<int> distColor(0, 255);
     std::uniform_int_distribution<int> distSign(0, 1);
-    // std::uniform_real_distribution<float> distSpin(-2.0f, 2.0f);
 
     // Calculate sprite size and spawn position
     Vector2f spriteSize(Config::Entity::SPRITE_WIDTH, Config::Entity::SPRITE_HEIGHT);
     Vector2f spawnPosition(distX(rng), distY(rng));
 
     // Create the entity and obtain a reference to it in order to manipulate it
-    entities.emplace_back(spriteSize, defaultTexture, spawnPosition);
+    entities.emplace_back(spriteSize, defaultTexture, spawnPosition, Config::Physics::DEFAULT_MASS, isStatic, freezeRotation);
     Entity &newEntity = entities.back();
 
     // Set hitbox
@@ -164,13 +175,21 @@ void Engine::instantiateEntity()
     newEntity.rgb[1] = static_cast<Uint8>(distColor(rng));
     newEntity.rgb[2] = static_cast<Uint8>(distColor(rng));
 
-    // Random initial direction
-    float dirX = (distSign(rng) == 0) ? -1.0f : 1.0f;
-    float dirY = (distSign(rng) == 0) ? -1.0f : 1.0f;
-    Vector2f dir(dirX, dirY);
+    if (!isStatic)
+    {
+        // Random initial direction
+        float dirX = (distSign(rng) == 0) ? -1.0f : 1.0f;
+        float dirY = (distSign(rng) == 0) ? -1.0f : 1.0f;
+        Vector2f dir(dirX, dirY);
 
-    // Add velocity and initial angular spin
-    newEntity.velocity.x += dir.normalized().x * Config::Entity::INITIAL_SPEED;
-    newEntity.velocity.y += dir.normalized().y * Config::Entity::INITIAL_SPEED;
-    newEntity.angularVelocity = 0.0;
+        // Add velocity
+        newEntity.velocity.x += dir.normalized().x * Config::Entity::INITIAL_SPEED;
+        newEntity.velocity.y += dir.normalized().y * Config::Entity::INITIAL_SPEED;
+    }
+    else
+    {
+        newEntity.velocity = Vector2f(0.0f, 0.0f);
+    }
+
+    newEntity.angularVelocity = 0.0f;
 }

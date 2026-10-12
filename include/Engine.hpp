@@ -19,7 +19,7 @@ public:
     bool isRunning() const { return running; }
 
 private:
-    void instantiateEntity();
+    void instantiateEntity(bool isStatic = false, bool freezeRotation = false);
 
     bool running;
     RenderWindow* window;

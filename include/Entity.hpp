@@ -12,6 +12,8 @@ public:
     Vector2f velocity;
     float angle;
     float angularVelocity;
+    bool isStatic;         // If true, immovable by physics (infinite mass and inertia)
+    bool freezeRotation;   // If true, cannot rotate (infinite inertia)
     bool grounded;
 
     float mass;
@@ -28,7 +30,10 @@ public:
     Uint8 rgb[3];
     float colorOffset;
 
-    Entity(const Vector2f& textureSize, SDL_Texture* spriteSheet, const Vector2f& spawnPos, float mass = Config::Physics::DEFAULT_MASS);
+    Entity(const Vector2f& textureSize, SDL_Texture* spriteSheet, const Vector2f& spawnPos, 
+           float mass = Config::Physics::DEFAULT_MASS, 
+           bool isStatic = false, 
+           bool freezeRotation = false);
     
     void update(float deltaTime);
     void render(SDL_Renderer* renderer) const;
@@ -37,6 +42,9 @@ public:
     Vector2f getPosition() const;
     void setPosition(const Vector2f & newPos);
     Vector2f getCenter() const;
+
+    void setStatic(bool staticState);
+    void setFreezeRotation(bool freezeRot);
     
     void setHitbox(const Vector2f& offset, const Vector2f& size);
     SDL_FRect getAbsoluteHitbox() const;

@@ -7,6 +7,9 @@
 // Applies gravity, friction and air/angular resistance to an entity
 void Physics::applyEnvironment(Entity& entity, float deltaTime)
 {
+    // Static entities are unaffected by gravity, drag and friction
+    if (entity.isStatic) return;
+
     // Gravity and air resistance
     if (!entity.grounded)
     {
@@ -26,12 +29,22 @@ void Physics::applyEnvironment(Entity& entity, float deltaTime)
     }
 
     // Angular drag (resistance to spinning)
-    entity.angularVelocity -= entity.angularVelocity * Config::Physics::ANGULAR_DRAG * deltaTime;
+    if (!entity.freezeRotation)
+    {
+        entity.angularVelocity -= entity.angularVelocity * Config::Physics::ANGULAR_DRAG * deltaTime;
+    }
+    else
+    {
+        entity.angularVelocity = 0.0f;
+    }
 }
 
 // Check and resolve collisions against screen borders with rigid body rotational response
 void Physics::resolveScreenBounds(Entity& entity, float deltaTime)
 {
+    // Static entities do not move or bounce
+    if (entity.isStatic) return;
+
     entity.grounded = false;
 
     // Advance position by linear velocity
@@ -77,7 +90,7 @@ void Physics::resolveScreenBounds(Entity& entity, float deltaTime)
         Vector2f contactPoint = getContactPoint(maxY, false);
         Vector2f r = contactPoint - center;
         Vector2f vp = entity.velocity + Vector2f::cross(entity.angularVelocity, r);
-        Vector2f n(0.0f, -1.0f); // Normal points inwards into screen
+        Vector2f n(0.0f, -1.0f);
 
         float vn = vp.dot(n);
         if (vn < 0.0f)
@@ -191,8 +204,15 @@ void Physics::resolveScreenBounds(Entity& entity, float deltaTime)
         entity.flipped = false;
     }
 
-    // Limit angular speed for numerical stability
-    entity.angularVelocity = std::clamp(entity.angularVelocity, -Config::Physics::MAX_ANGULAR_SPEED, Config::Physics::MAX_ANGULAR_SPEED);
+    // Limit angular speed for numerical stability or zero if rotation is frozen
+    if (entity.freezeRotation)
+    {
+        entity.angularVelocity = 0.0f;
+    }
+    else
+    {
+        entity.angularVelocity = std::clamp(entity.angularVelocity, -Config::Physics::MAX_ANGULAR_SPEED, Config::Physics::MAX_ANGULAR_SPEED);
+    }
 }
 
 // Resolve collisions between entities using multiple iterations
@@ -214,6 +234,9 @@ void Physics::resolveEntityCollisions(std::vector<Entity>& entities)
 // Internal SAT collision check with 2D rigid body linear and angular impulse response
 void Physics::checkCollision(Entity& a, Entity& b)
 {
+    // If both entities are static, no collision resolution is needed
+    if (a.isStatic && b.isStatic) return;
+
     auto vertA = a.getHitboxVertices();
     auto vertB = b.getHitboxVertices();
 
@@ -377,7 +400,10 @@ void Physics::checkCollision(Entity& a, Entity& b)
     a.angularVelocity -= rA.cross(totalImpulse) * a.invInertia;
     b.angularVelocity += rB.cross(totalImpulse) * b.invInertia;
 
-    // Clamp angular velocities for stability
-    a.angularVelocity = std::clamp(a.angularVelocity, -Config::Physics::MAX_ANGULAR_SPEED, Config::Physics::MAX_ANGULAR_SPEED);
-    b.angularVelocity = std::clamp(b.angularVelocity, -Config::Physics::MAX_ANGULAR_SPEED, Config::Physics::MAX_ANGULAR_SPEED);
+    // Clamp angular velocities for stability, or zero them out if rotation is frozen/static
+    if (a.freezeRotation || a.isStatic) a.angularVelocity = 0.0f;
+    else a.angularVelocity = std::clamp(a.angularVelocity, -Config::Physics::MAX_ANGULAR_SPEED, Config::Physics::MAX_ANGULAR_SPEED);
+
+    if (b.freezeRotation || b.isStatic) b.angularVelocity = 0.0f;
+    else b.angularVelocity = std::clamp(b.angularVelocity, -Config::Physics::MAX_ANGULAR_SPEED, Config::Physics::MAX_ANGULAR_SPEED);
 }

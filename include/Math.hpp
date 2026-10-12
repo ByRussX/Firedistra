@@ -8,15 +8,15 @@ public:
     float x;
     float y;
     
-    constexpr Vector2f(float p_x = 0.0f, float p_y = 0.0f) : x(p_x), y(p_y) {}
+    explicit constexpr Vector2f(float p_x = 0.0f, float p_y = 0.0f) : x(p_x), y(p_y) {}
 
     // Operator overloading
-    constexpr Vector2f operator+(const Vector2f & other) const
+    constexpr Vector2f operator+(Vector2f other) const
     {
         return Vector2f(x + other.x, y + other.y);
     }
 
-    constexpr Vector2f operator-(const Vector2f & other) const
+    constexpr Vector2f operator-(Vector2f other) const
     {
         return Vector2f(x - other.x, y - other.y);
     }
@@ -31,7 +31,7 @@ public:
         return Vector2f(x * scalar, y * scalar);
     }
 
-    friend constexpr Vector2f operator*(float scalar, const Vector2f & vec)
+    friend constexpr Vector2f operator*(float scalar, Vector2f vec)
     {
         return Vector2f(vec.x * scalar, vec.y * scalar);
     }
@@ -41,40 +41,42 @@ public:
         return Vector2f(x / scalar, y / scalar);
     }
 
-    Vector2f & operator+=(const Vector2f & other)
+    Vector2f& operator+=(Vector2f other)
     {
         x += other.x;
         y += other.y;
+
         return *this;
     }
 
-    Vector2f & operator-=(const Vector2f & other)
+    Vector2f& operator-=(Vector2f other)
     {
         x -= other.x;
         y -= other.y;
+        
         return *this;
     }
 
-    Vector2f & operator*=(float scalar)
+    Vector2f& operator*=(float scalar)
     {
         x *= scalar;
         y *= scalar;
         return *this;
     }
 
-    Vector2f & operator/=(float scalar)
+    Vector2f& operator/=(float scalar)
     {
         x /= scalar;
         y /= scalar;
         return *this;
     }
 
-    constexpr bool operator==(const Vector2f & other) const
+    constexpr bool operator==(Vector2f other) const
     {
         return x == other.x && y == other.y;
     }
 
-    constexpr bool operator!=(const Vector2f & other) const
+    constexpr bool operator!=(Vector2f other) const
     {
         return !(*this == other);
     }
@@ -98,7 +100,7 @@ public:
     }
 
     // Dot product
-    constexpr float dot(const Vector2f & other) const
+    constexpr float dot(Vector2f other) const
     {
         return x * other.x + y * other.y;
     }

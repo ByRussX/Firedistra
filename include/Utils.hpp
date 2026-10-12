@@ -3,15 +3,9 @@
 
 namespace Utils
 {
-    // Returns time in seconds with high precision using SDL3 nanoseconds timer
+    // Returns elapsed time in seconds
     inline double getTimeInSeconds()
     {
         return static_cast<double>(SDL_GetTicksNS()) * 1e-9;
-    }
-
-    // Alias for backwards compatibility
-    inline double hireTimeInSeconds()
-    {
-        return getTimeInSeconds();
     }
 }

@@ -19,9 +19,11 @@ public:
     bool isRunning() const { return running; }
 
 private:
-    void instantiateEntity(bool isStatic = false, bool freezeRotation = false);
+    void instantiateEntity(bool isIntangible = false, bool isStatic = false, bool isAxisAligned = false);
 
     bool running;
+    bool isRenderingHitboxes;
+
     RenderWindow* window;
     SDL_Texture* defaultTexture;
     std::vector<Entity> entities;

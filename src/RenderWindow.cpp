@@ -42,6 +42,38 @@ RenderWindow::~RenderWindow()
     destroy();
 }
 
+// Sets the window icon
+bool RenderWindow::setIcon(const char* p_filePath)
+{
+    if (window == nullptr)
+    {
+        std::cerr << "RenderWindow::setIcon: Window is null" << std::endl;
+        return false;
+    }
+
+    // Load the image as a surface
+    SDL_Surface* iconSurface = IMG_Load(p_filePath);
+    if (iconSurface == nullptr)
+    {
+        std::cerr << "RenderWindow::setIcon: Failed to load icon '" << p_filePath 
+                  << "'. SDL_Error: " << SDL_GetError() << std::endl;
+        return false;
+    }
+
+    // Assign the icon to the window
+    bool success = SDL_SetWindowIcon(window, iconSurface);
+    if (!success)
+    {
+        std::cerr << "RenderWindow::setIcon: Failed to set window icon. SDL_Error: " 
+                  << SDL_GetError() << std::endl;
+    }
+
+    // Free surface memory
+    SDL_DestroySurface(iconSurface);
+
+    return success;
+}
+
 // Load a texture from a file
 SDL_Texture * RenderWindow::loadTexture(const char* p_filePath)
 {

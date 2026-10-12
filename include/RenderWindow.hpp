@@ -5,19 +5,21 @@
 class RenderWindow
 {
 public:
-    RenderWindow(const char* p_title, int p_w, int p_h); 
-    ~RenderWindow(); 
+    RenderWindow(const char* p_title, int p_w, int p_h);
+    ~RenderWindow();
 
     // Security, avoid copying the window object
     RenderWindow(const RenderWindow&) = delete;
     RenderWindow & operator=(const RenderWindow&) = delete;
 
-    SDL_Texture * loadTexture(const char* p_filePath); 
+    bool setIcon(const char* p_filePath);
+
+    SDL_Texture * loadTexture(const char* p_filePath);
     float getRefreshRate() const;
     
-    void clear(); 
-    void display(); 
-    void destroy(); 
+    void clear();
+    void display();
+    void destroy();
 
     SDL_Renderer * getRenderer() const { return renderer; }
     SDL_Window * getWindow() const { return window; }

@@ -11,7 +11,7 @@ void Physics::applyEnvironment(Entity& entity, float deltaTime)
     if (entity.isStatic) return;
 
     // Gravity and air resistance
-    if (!entity.grounded)
+    if (!entity.isGrounded)
     {
         entity.velocity.x -= entity.velocity.x * Config::Physics::AIR_DRAG * deltaTime;
         entity.velocity.y += Config::Physics::GRAVITY * deltaTime;
@@ -29,7 +29,7 @@ void Physics::applyEnvironment(Entity& entity, float deltaTime)
     }
 
     // Angular drag (resistance to spinning)
-    if (!entity.freezeRotation)
+    if (!entity.isAxisAligned)
     {
         entity.angularVelocity -= entity.angularVelocity * Config::Physics::ANGULAR_DRAG * deltaTime;
     }
@@ -45,7 +45,7 @@ void Physics::resolveScreenBounds(Entity& entity, float deltaTime)
     // Static entities do not move or bounce
     if (entity.isStatic) return;
 
-    entity.grounded = false;
+    entity.isGrounded = false;
 
     // Advance position by linear velocity
     entity.position.x += entity.velocity.x * deltaTime;
@@ -121,7 +121,7 @@ void Physics::resolveScreenBounds(Entity& entity, float deltaTime)
         }
 
         entity.position.y -= pen;
-        entity.grounded = true;
+        entity.isGrounded = true;
     }
 
     // Ceiling collision
@@ -174,7 +174,7 @@ void Physics::resolveScreenBounds(Entity& entity, float deltaTime)
         }
 
         entity.position.x += pen;
-        entity.flipped = true;
+        entity.isFlipped = true;
     }
 
     // Right wall collision
@@ -201,11 +201,11 @@ void Physics::resolveScreenBounds(Entity& entity, float deltaTime)
         }
 
         entity.position.x -= pen;
-        entity.flipped = false;
+        entity.isFlipped = false;
     }
 
     // Limit angular speed for numerical stability or zero if rotation is frozen
-    if (entity.freezeRotation)
+    if (entity.isAxisAligned)
     {
         entity.angularVelocity = 0.0f;
     }
@@ -234,6 +234,9 @@ void Physics::resolveEntityCollisions(std::vector<Entity>& entities)
 // Internal SAT collision check with 2D rigid body linear and angular impulse response
 void Physics::checkCollision(Entity& a, Entity& b)
 {
+    // If any entity is non tangible, no collision resolution is needed
+    if (a.isIntangible || b.isIntangible) return;
+
     // If both entities are static, no collision resolution is needed
     if (a.isStatic && b.isStatic) return;
 
@@ -401,9 +404,9 @@ void Physics::checkCollision(Entity& a, Entity& b)
     b.angularVelocity += rB.cross(totalImpulse) * b.invInertia;
 
     // Clamp angular velocities for stability, or zero them out if rotation is frozen/static
-    if (a.freezeRotation || a.isStatic) a.angularVelocity = 0.0f;
+    if (a.isAxisAligned || a.isStatic) a.angularVelocity = 0.0f;
     else a.angularVelocity = std::clamp(a.angularVelocity, -Config::Physics::MAX_ANGULAR_SPEED, Config::Physics::MAX_ANGULAR_SPEED);
 
-    if (b.freezeRotation || b.isStatic) b.angularVelocity = 0.0f;
+    if (b.isAxisAligned || b.isStatic) b.angularVelocity = 0.0f;
     else b.angularVelocity = std::clamp(b.angularVelocity, -Config::Physics::MAX_ANGULAR_SPEED, Config::Physics::MAX_ANGULAR_SPEED);
 }

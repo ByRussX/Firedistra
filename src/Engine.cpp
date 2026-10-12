@@ -32,6 +32,12 @@ bool Engine::init(const char* title, int width, int height)
         return false;
     }
 
+    // Set the window icon
+    if (!window->setIcon("extras/logo.png"))
+    {
+        return false;
+    }
+
     // Create the textures
     defaultTexture = window->loadTexture(Config::Entity::DEFAULT_TEXTURE_PATH);
     if (!defaultTexture)
@@ -40,6 +46,8 @@ bool Engine::init(const char* title, int width, int height)
     }
 
     running = true;
+    isRenderingHitboxes = false;
+
     return true;
 }
 
@@ -69,19 +77,31 @@ void Engine::handleEvents()
             // Space pressed, instantiate dynamic entity
             if (event.key.key == SDLK_SPACE && !event.key.repeat)
             {
-                instantiateEntity(false, false);
+                instantiateEntity(false, false, false);
+            }
+
+            // I pressed, instantiate intangible entity
+            if (event.key.key == SDLK_I && !event.key.repeat)
+            {
+                instantiateEntity(true, false, false);
             }
 
             // F pressed, instantiate static / fixed entity
             if (event.key.key == SDLK_F && !event.key.repeat)
             {
-                instantiateEntity(true, true);
+                instantiateEntity(false, true, true);
             }
 
             // R pressed, instantiate dynamic entity with frozen rotation (does not spin)
             if (event.key.key == SDLK_R && !event.key.repeat)
             {
-                instantiateEntity(false, true);
+                instantiateEntity(false, false, true);
+            }
+
+            // H pressed, toggle hitboxes
+            if (event.key.key == SDLK_H && !event.key.repeat)
+            {
+                isRenderingHitboxes = !isRenderingHitboxes;
             }
         }
     }
@@ -118,7 +138,7 @@ void Engine::render()
     for (Entity & e : entities)
     {
         e.render(renderer);
-        // e.renderDebug(renderer);
+        if (isRenderingHitboxes) e.renderHitboxes(renderer);
     }
 
     // Show screen contents
@@ -147,7 +167,7 @@ void Engine::clean()
 }
 
 // Creates an instance of an entity
-void Engine::instantiateEntity(bool isStatic, bool freezeRotation)
+void Engine::instantiateEntity(bool isIntangible, bool isStatic, bool isAxisAligned)
 {
     // Apply scale to sprite dimension
     float scaledW = Config::Entity::SPRITE_WIDTH * Config::Entity::SCALE;
@@ -164,7 +184,7 @@ void Engine::instantiateEntity(bool isStatic, bool freezeRotation)
     Vector2f spawnPosition(distX(rng), distY(rng));
 
     // Create the entity and obtain a reference to it in order to manipulate it
-    entities.emplace_back(spriteSize, defaultTexture, spawnPosition, Config::Physics::DEFAULT_MASS, isStatic, freezeRotation);
+    entities.emplace_back(spriteSize, defaultTexture, spawnPosition, Config::Physics::DEFAULT_MASS, isIntangible, isStatic, isAxisAligned);
     Entity &newEntity = entities.back();
 
     // Set hitbox

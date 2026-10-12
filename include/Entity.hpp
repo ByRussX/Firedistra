@@ -12,9 +12,11 @@ public:
     Vector2f velocity;
     float angle;
     float angularVelocity;
-    bool isStatic;         // If true, immovable by physics (infinite mass and inertia)
-    bool freezeRotation;   // If true, cannot rotate (infinite inertia)
-    bool grounded;
+
+    bool isIntangible;          // Does its hitbox not collide?
+    bool isStatic;              // Is it affected by collisions and physics?
+    bool isAxisAligned;         // Can it rotate?
+    bool isGrounded;            // On the ground?
 
     float mass;
     float invMass;
@@ -22,7 +24,7 @@ public:
     float invInertia;
 
     Hitbox hitbox;
-    bool flipped;
+    bool isFlipped;
 
     Vector2f textureSize;
     SDL_Texture * spriteSheet;
@@ -32,12 +34,13 @@ public:
 
     Entity(const Vector2f& textureSize, SDL_Texture* spriteSheet, const Vector2f& spawnPos, 
            float mass = Config::Physics::DEFAULT_MASS, 
+           bool isIntangible = false, 
            bool isStatic = false, 
-           bool freezeRotation = false);
+           bool isAxisAligned = false);
     
     void update(float deltaTime);
     void render(SDL_Renderer* renderer) const;
-    void renderDebug(SDL_Renderer* renderer) const;
+    void renderHitboxes(SDL_Renderer* renderer) const;
 
     Vector2f getPosition() const;
     void setPosition(const Vector2f & newPos);

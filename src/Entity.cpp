@@ -4,21 +4,36 @@
 #include <cmath>
 #include <algorithm>
 
-Entity::Entity(const Vector2f & textureSize, SDL_Texture * spriteSheet, const Vector2f & spawnPos, float mass, bool isStatic, bool freezeRotation)
-    : velocity(0.0f, 0.0f),
-      angle(0.0f),
-      angularVelocity(0.0f),
-      grounded(false),
-      isStatic(isStatic),
-      freezeRotation(freezeRotation),
-      mass(mass),
-      invMass(0.0f),
-      inertia(1.0f),
-      invInertia(1.0f),
-      flipped(false),
-      textureSize(textureSize),
-      spriteSheet(spriteSheet),
-      colorOffset(static_cast<float>(rand() % 100))
+Entity::Entity(
+    const Vector2f& textureSize, 
+    SDL_Texture* spriteSheet, 
+    const Vector2f& spawnPos, 
+    float mass, 
+    bool isIntangible,
+    bool isStatic, 
+    bool isAxisAligned
+): 
+    
+    velocity(0.0f, 0.0f), 
+    angle(0.0f), 
+    angularVelocity(0.0f), 
+
+    isIntangible(isIntangible), 
+    isStatic(isStatic), 
+    isAxisAligned(isAxisAligned), 
+    isGrounded(false), 
+
+    mass(mass), 
+    invMass(0.0f), 
+    inertia(1.0f), 
+    invInertia(1.0f), 
+
+    isFlipped(false), 
+    
+    textureSize(textureSize), 
+    spriteSheet(spriteSheet), 
+
+    colorOffset(static_cast<float>(rand() % 100))
 {
     // Initialize position and dimensions (scaled)
     position.x = spawnPos.x;
@@ -45,7 +60,7 @@ void Entity::updateInertia()
     {
         invMass = 1.0f / mass;
         inertia = (1.0f / 12.0f) * mass * (w * w + h * h);
-        invInertia = (!freezeRotation && inertia > 0.0f) ? (1.0f / inertia) : 0.0f;
+        invInertia = (!isAxisAligned && inertia > 0.0f) ? (1.0f / inertia) : 0.0f;
     }
     else
     {
@@ -56,7 +71,7 @@ void Entity::updateInertia()
         angularVelocity = 0.0f;
     }
 
-    if (freezeRotation)
+    if (isAxisAligned)
     {
         invInertia = 0.0f;
         angularVelocity = 0.0f;
@@ -67,7 +82,7 @@ void Entity::updateInertia()
 void Entity::update(float deltaTime)
 {
     // Rotate dynamically according to physical angular velocity only if rotation is not frozen and entity is not static
-    if (!freezeRotation && !isStatic)
+    if (!isAxisAligned && !isStatic)
     {
         angle += (angularVelocity * Math::RAD_TO_DEG) * deltaTime;
         
@@ -97,7 +112,7 @@ void Entity::render(SDL_Renderer* renderer) const
     if (renderer == nullptr || spriteSheet == nullptr) return;
     
     // Set texture flip state
-    SDL_FlipMode flip = (flipped) ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
+    SDL_FlipMode flip = (isFlipped) ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
     SDL_FRect texturePart = getSourceRect();
 
     SDL_SetTextureColorMod(spriteSheet, rgb[0], rgb[1], rgb[2]);
@@ -105,15 +120,24 @@ void Entity::render(SDL_Renderer* renderer) const
 }
 
 // Render the hitbox
-void Entity::renderDebug(SDL_Renderer* renderer) const
+void Entity::renderHitboxes(SDL_Renderer* renderer) const
 {
     if (renderer == nullptr) return;
 
     // Obtain the four vertices in global coordinates
     auto verts = getHitboxVertices();
 
-    // Render in green to make it notable
-    SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
+    // Render in green for tangible hitboxes
+    if (!isIntangible)
+    {
+        SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
+    }
+
+    // Render in red for intangible hitboxes
+    else
+    {
+        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+    }
 
     // Draw the four edges connecting the vertices
     for (size_t i = 0; i < 4; ++i)
@@ -164,8 +188,8 @@ void Entity::setStatic(bool staticState)
 // Set whether the entity's rotation is locked/frozen
 void Entity::setFreezeRotation(bool freezeRot)
 {
-    freezeRotation = freezeRot;
-    if (freezeRotation)
+    isAxisAligned = freezeRot;
+    if (isAxisAligned)
     {
         angularVelocity = 0.0f;
     }

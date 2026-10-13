@@ -49,33 +49,78 @@ Entity::Entity(
     rgb[2] = 255;
 }
 
-// Recalculates moment of inertia for a rectangular rigid body: I = (1/12) * m * (w^2 + h^2)
 void Entity::updateInertia()
 {
-    Vector2f size = hitbox.getSize();
-    float w = size.x > 0.0f ? size.x : position.w;
-    float h = size.y > 0.0f ? size.y : position.h;
-
-    if (!isStatic && mass > 0.0f)
-    {
-        invMass = 1.0f / mass;
-        inertia = (1.0f / 12.0f) * mass * (w * w + h * h);
-        invInertia = (!isAxisAligned && inertia > 0.0f) ? (1.0f / inertia) : 0.0f;
-    }
-    else
+    // No mass, no inertia
+    if (mass <= 0.0f)
     {
         invMass = 0.0f;
         inertia = 0.0f;
         invInertia = 0.0f;
-        velocity = Vector2f(0.0f, 0.0f);
-        angularVelocity = 0.0f;
+        return;
     }
 
-    if (isAxisAligned)
+    invMass = 1.0f / mass;
+
+    // No hitboxes, use sprite size
+    if (hitboxes.empty())
     {
-        invInertia = 0.0f;
-        angularVelocity = 0.0f;
+        float w = position.w;
+        float h = position.h;
+        inertia = (1.0f / 12.0f) * mass * (w * w + h * h);
+        invInertia = inertia > 0.0f ? 1.0f / inertia : 0.0f;
+        return;
     }
+
+    // Calculate total area to distribute the mass
+    float totalArea = 0.0f;
+    for (const auto& hb : hitboxes)
+    {
+        Vector2f size = hb.getSize();
+        totalArea += (size.x * size.y);
+    }
+
+    // No area, no inertia
+    if (totalArea <= 0.0f)
+    {
+        inertia = 0.0f;
+        invInertia = 0.0f;
+        return;
+    }
+
+    // Apply Steiner's theorem to add inertias
+    float totalInertia = 0.0f;
+    
+    // Global rotation center
+    Vector2f entityCenter = getCenter(); 
+
+    // For each hitbox
+    for (const auto& hb : hitboxes)
+    {
+        Vector2f size = hb.getSize();
+        Vector2f offset = hb.getOffset();
+        
+        float area = size.x * size.y;
+        float hitboxMass = mass * (area / totalArea);
+
+        // Local inertia of this hitbox over its center, I = (1/12) * m * (w^2 + h^2)
+        float localInertia = (1.0f / 12.0f) * hitboxMass * (size.x * size.x + size.y * size.y);
+
+        // Global center of this hitbox
+        float hbCenterX = position.x + offset.x + size.x * 0.5f;
+        float hbCenterY = position.y + offset.y + size.y * 0.5f;
+        
+        // Squared distance between the center of the hitbox and the center of the sprite
+        float distX = hbCenterX - entityCenter.x;
+        float distY = hbCenterY - entityCenter.y;
+        float distSq = (distX * distX) + (distY * distY);
+
+        // Add to the total inertia I_total += I_local + m * d^2
+        totalInertia += localInertia + (hitboxMass * distSq);
+    }
+
+    inertia = totalInertia;
+    invInertia = (inertia > 0.0f) ? 1.0f / inertia : 0.0f;
 }
 
 // Update entity visuals and integrate rotational angle
@@ -119,13 +164,10 @@ void Entity::render(SDL_Renderer* renderer) const
     SDL_RenderTextureRotated(renderer, spriteSheet, &texturePart, &position, angle, nullptr, flip);
 }
 
-// Render the hitbox
+// Render the hitboxes
 void Entity::renderHitboxes(SDL_Renderer* renderer) const
 {
     if (renderer == nullptr) return;
-
-    // Obtain the four vertices in global coordinates
-    auto verts = getHitboxVertices();
 
     // Render in green for tangible hitboxes
     if (!isIntangible)
@@ -139,13 +181,17 @@ void Entity::renderHitboxes(SDL_Renderer* renderer) const
         SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
     }
 
-    // Draw the four edges connecting the vertices
-    for (size_t i = 0; i < 4; ++i)
+    // For each hitbox on the entity
+    for (const std::array<Vector2f, 4>& verts : getAllHitboxVertices())
     {
-        const Vector2f & p1 = verts[i];
-        const Vector2f & p2 = verts[(i + 1) % 4];
+        // Draw the four edges connecting the vertices
+        for (size_t i = 0; i < 4; ++i)
+        {
+            const Vector2f & p1 = verts[i];
+            const Vector2f & p2 = verts[(i + 1) % 4];
 
-        SDL_RenderLine(renderer, p1.x, p1.y, p2.x, p2.y);
+            SDL_RenderLine(renderer, p1.x, p1.y, p2.x, p2.y);
+        }
     }
 }
 
@@ -167,16 +213,17 @@ void Entity::setPosition(const Vector2f & newPos)
 // Get center of mass of the entity
 Vector2f Entity::getCenter() const
 {
-    Vector2f offset = hitbox.getOffset();
-    Vector2f size = hitbox.getSize();
-    return Vector2f(position.x + offset.x + size.x * 0.5f,
-                    position.y + offset.y + size.y * 0.5f);
+    return Vector2f(
+        position.x + position.w * 0.5f, 
+        position.y + position.h * 0.5f
+    );
 }
 
 // Set whether the entity is static (fixed in place) or dynamic
 void Entity::setStatic(bool staticState)
 {
     isStatic = staticState;
+
     if (isStatic)
     {
         velocity = Vector2f(0.0f, 0.0f);
@@ -196,24 +243,30 @@ void Entity::setFreezeRotation(bool freezeRot)
     updateInertia();
 }
 
-// Get absolute position for the hitbox vertices on screen
-std::array<Vector2f, 4> Entity::getHitboxVertices() const
+// Add a hitbox to the entity
+void Entity::addHitbox(const Vector2f& offset, const Vector2f& size)
 {
-    return hitbox.getVertices(position, angle, isFlipped);
-}
-
-// Set hitbox for the entity and recalculate inertia
-void Entity::setHitbox(const Vector2f& offset, const Vector2f& size)
-{
-    hitbox.setOffset(Vector2f(offset.x * Config::Entity::SCALE, offset.y * Config::Entity::SCALE));
-    hitbox.setSize(Vector2f(size.x * Config::Entity::SCALE, size.y * Config::Entity::SCALE));
+    hitboxes.emplace_back(offset * Config::Entity::SCALE, size * Config::Entity::SCALE);
     updateInertia();
 }
 
-// Get absolute position for the hitbox on screen
-SDL_FRect Entity::getAbsoluteHitbox() const
+// Clear the hitboxes of the entity
+void Entity::clearHitboxes()
 {
-    return hitbox.getAbsoluteRect(position);
+    hitboxes.clear();
+}
+
+// Get all the vertices for each hitbox on the entity
+std::vector<std::array<Vector2f, 4>> Entity::getAllHitboxVertices() const
+{
+    std::vector<std::array<Vector2f, 4>> allVerts;
+
+    for (const Hitbox& hb : hitboxes)
+    {
+        allVerts.push_back(hb.getVertices(position, angle, isFlipped));
+    }
+
+    return allVerts;
 }
 
 // Get source sprite rect

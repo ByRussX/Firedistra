@@ -7,10 +7,8 @@
 // Applies gravity, friction and air/angular resistance to an entity
 void Physics::applyEnvironment(Entity& entity, float deltaTime)
 {
-    // Static entities are unaffected by gravity, drag and friction
     if (entity.isStatic) return;
 
-    // Gravity and air resistance
     if (!entity.isGrounded)
     {
         entity.velocity.x -= entity.velocity.x * Config::Physics::AIR_DRAG * deltaTime;
@@ -18,7 +16,6 @@ void Physics::applyEnvironment(Entity& entity, float deltaTime)
     }
     else
     {
-        // Ground friction
         if (entity.velocity.x != 0.0f)
         {
             float velX = std::abs(entity.velocity.x) >= 0.5f 
@@ -28,7 +25,6 @@ void Physics::applyEnvironment(Entity& entity, float deltaTime)
         }
     }
 
-    // Angular drag (resistance to spinning)
     if (!entity.isAxisAligned)
     {
         entity.angularVelocity -= entity.angularVelocity * Config::Physics::ANGULAR_DRAG * deltaTime;
@@ -42,7 +38,6 @@ void Physics::applyEnvironment(Entity& entity, float deltaTime)
 // Check and resolve collisions against screen borders with rigid body rotational response
 void Physics::resolveScreenBounds(Entity& entity, float deltaTime)
 {
-    // Static entities do not move or bounce
     if (entity.isStatic) return;
 
     entity.isGrounded = false;
@@ -51,36 +46,43 @@ void Physics::resolveScreenBounds(Entity& entity, float deltaTime)
     entity.position.x += entity.velocity.x * deltaTime;
     entity.position.y += entity.velocity.y * deltaTime;
 
-    // Get rotated hitbox vertices
-    auto vertices = entity.getHitboxVertices();
+    auto allVerts = entity.getAllHitboxVertices();
+    if (allVerts.empty()) return;
+
+    // Center of mass for torque calculations
     Vector2f center = entity.getCenter();
 
-    // Find bounding box limits
-    float minX = vertices[0].x, maxX = vertices[0].x;
-    float minY = vertices[0].y, maxY = vertices[0].y;
+    float minX = 1e9f, maxX = -1e9f;
+    float minY = 1e9f, maxY = -1e9f;
 
-    for (int i = 1; i < 4; ++i)
+    for (const auto& verts : allVerts)
     {
-        if (vertices[i].x < minX) minX = vertices[i].x;
-        if (vertices[i].x > maxX) maxX = vertices[i].x;
-        if (vertices[i].y < minY) minY = vertices[i].y;
-        if (vertices[i].y > maxY) maxY = vertices[i].y;
-    }
-
-    auto getContactPoint = [&](float limit, bool isXAxis) -> Vector2f
-    {
-        Vector2f cp(0.0f, 0.0f);
-        int count = 0;
         for (int i = 0; i < 4; ++i)
         {
-            float value = isXAxis ? vertices[i].x : vertices[i].y;
-            if (std::abs(value - limit) < 0.1f)
-            {
-                cp += vertices[i];
-                count++;
+            if (verts[i].x < minX) minX = verts[i].x;
+            if (verts[i].x > maxX) maxX = verts[i].x;
+            if (verts[i].y < minY) minY = verts[i].y;
+            if (verts[i].y > maxY) maxY = verts[i].y;
+        }
+    }
+
+    auto getContactPoint = [&](float limit, bool isXAxis) -> Vector2f {
+        Vector2f cp(0.0f, 0.0f);
+        int count = 0;
+
+        for (const auto& verts : allVerts)
+        {
+            for (int i = 0; i < 4; ++i) {
+                float value = isXAxis ? verts[i].x : verts[i].y;
+                if (std::abs(value - limit) < 0.1f)
+                {
+                    cp += verts[i];
+                    count++;
+                }
             }
         }
-        return cp / static_cast<float>(count);
+
+        return (count > 0) ? cp / static_cast<float>(count) : cp;
     };
 
     // Floor collision
@@ -104,7 +106,6 @@ void Physics::resolveScreenBounds(Entity& entity, float deltaTime)
                 entity.velocity += n * (jn * entity.invMass);
                 entity.angularVelocity += (r.cross(n * jn)) * entity.invInertia;
 
-                // Tangential friction with floor
                 Vector2f t(1.0f, 0.0f);
                 float vt = vp.dot(t);
                 float rCrossT = r.cross(t);
@@ -204,7 +205,6 @@ void Physics::resolveScreenBounds(Entity& entity, float deltaTime)
         entity.isFlipped = false;
     }
 
-    // Limit angular speed for numerical stability or zero if rotation is frozen
     if (entity.isAxisAligned)
     {
         entity.angularVelocity = 0.0f;
@@ -218,7 +218,6 @@ void Physics::resolveScreenBounds(Entity& entity, float deltaTime)
 // Resolve collisions between entities using multiple iterations
 void Physics::resolveEntityCollisions(std::vector<Entity>& entities)
 {
-    // Multiple solver iterations ensure stability and minimize penetration
     for (int iteration = 0; iteration < 3; ++iteration)
     {
         for (size_t i = 0; i < entities.size(); ++i)
@@ -231,24 +230,32 @@ void Physics::resolveEntityCollisions(std::vector<Entity>& entities)
     }
 }
 
-// Internal SAT collision check with 2D rigid body linear and angular impulse response
+// Iterates through all composite hitboxes between entity A and entity B
 void Physics::checkCollision(Entity& a, Entity& b)
 {
-    // If any entity is non tangible, no collision resolution is needed
     if (a.isIntangible || b.isIntangible) return;
-
-    // If both entities are static, no collision resolution is needed
     if (a.isStatic && b.isStatic) return;
 
-    auto vertA = a.getHitboxVertices();
-    auto vertB = b.getHitboxVertices();
+    auto hitboxesA = a.getAllHitboxVertices();
+    auto hitboxesB = b.getAllHitboxVertices();
 
-    // Obtain the 4 perpendicular axes (2 for box A and 2 for box B)
+    for (const auto& vertA : hitboxesA)
+    {
+        for (const auto& vertB : hitboxesB)
+        {
+            resolveSingleSAT(a, b, vertA, vertB);
+        }
+    }
+}
+
+// Internal SAT collision check with 2D rigid body linear and angular impulse response
+void Physics::resolveSingleSAT(Entity& a, Entity& b, const std::array<Vector2f, 4>& vertA, const std::array<Vector2f, 4>& vertB)
+{
     std::array<Vector2f, 4> axes = {
-        (vertA[1] - vertA[0]).perp().normalized(), // Top side normal of A
-        (vertA[3] - vertA[0]).perp().normalized(), // Left side normal of A
-        (vertB[1] - vertB[0]).perp().normalized(), // Top side normal of B
-        (vertB[3] - vertB[0]).perp().normalized()  // Left side normal of B
+        (vertA[1] - vertA[0]).perp().normalized(),
+        (vertA[3] - vertA[0]).perp().normalized(),
+        (vertB[1] - vertB[0]).perp().normalized(),
+        (vertB[3] - vertB[0]).perp().normalized()
     };
 
     float minOverlap = 1e9f;
@@ -256,7 +263,6 @@ void Physics::checkCollision(Entity& a, Entity& b)
 
     for (const Vector2f & axis : axes)
     {
-        // Project vertA over the current axis
         float minA = vertA[0].dot(axis), maxA = minA;
         for (int i = 1; i < 4; ++i)
         {
@@ -265,7 +271,6 @@ void Physics::checkCollision(Entity& a, Entity& b)
             maxA = std::max(maxA, p);
         }
 
-        // Project vertB over the current axis
         float minB = vertB[0].dot(axis), maxB = minB;
         for (int i = 1; i < 4; ++i)
         {
@@ -274,16 +279,13 @@ void Physics::checkCollision(Entity& a, Entity& b)
             maxB = std::max(maxB, p);
         }
 
-        // Check for axis separation
         float overlap = std::min(maxA, maxB) - std::max(minA, minB);
 
-        // If there is a gap on at least one axis, there is no collision
         if (overlap <= 0.0f)
         {
             return;
         }
 
-        // Save the axis with the minimum overlap (MTV)
         if (overlap < minOverlap)
         {
             minOverlap = overlap;
@@ -291,18 +293,15 @@ void Physics::checkCollision(Entity& a, Entity& b)
         }
     }
 
-    // Calculate centers of mass
     Vector2f centerA = a.getCenter();
     Vector2f centerB = b.getCenter();
     Vector2f dirAB = centerB - centerA;
 
-    // Ensure the separation axis points from A to B
     if (dirAB.dot(smallestAxis) < 0.0f)
     {
         smallestAxis = -smallestAxis;
     }
 
-    // Positional separation based on inverse masses
     float totalInvMass = a.invMass + b.invMass;
     if (totalInvMass > 0.0f)
     {
@@ -312,12 +311,10 @@ void Physics::checkCollision(Entity& a, Entity& b)
         b.position.x += separation.x * (b.invMass / totalInvMass);
         b.position.y += separation.y * (b.invMass / totalInvMass);
 
-        // Update centers after positional correction
         centerA = a.getCenter();
         centerB = b.getCenter();
     }
 
-    // Find contact point: determine deepest penetrating vertices along smallestAxis
     float minB = vertB[0].dot(smallestAxis);
     Vector2f bestB = vertB[0];
     for (int i = 1; i < 4; ++i)
@@ -342,25 +339,19 @@ void Physics::checkCollision(Entity& a, Entity& b)
         }
     }
 
-    // Contact point is the midpoint of the penetration region
     Vector2f contactPoint = (bestA + bestB) * 0.5f;
 
-    // Lever arm vectors from center of mass to contact point
     Vector2f rA = contactPoint - centerA;
     Vector2f rB = contactPoint - centerB;
 
-    // Velocity of bodies at the contact point (linear + angular v = v + w x r)
     Vector2f vpA = a.velocity + Vector2f::cross(a.angularVelocity, rA);
     Vector2f vpB = b.velocity + Vector2f::cross(b.angularVelocity, rB);
 
-    // Relative velocity at contact point
     Vector2f relativeVelocity = vpA - vpB;
     float velAlongNormal = relativeVelocity.dot(smallestAxis);
 
-    // Do not resolve if entities are already separating
     if (velAlongNormal <= 0.0f) return;
 
-    // Effective mass along the normal
     float rACrossN = rA.cross(smallestAxis);
     float rBCrossN = rB.cross(smallestAxis);
     float kn = a.invMass + b.invMass 
@@ -369,11 +360,9 @@ void Physics::checkCollision(Entity& a, Entity& b)
 
     if (kn <= 0.0f) return;
 
-    // Normal impulse magnitude
     float impulseMagnitude = (1.0f + Config::Physics::RESTITUTION) * velAlongNormal / kn;
     Vector2f normalImpulse = smallestAxis * impulseMagnitude;
 
-    // Tangential (friction) impulse for rotational spin on angled impacts
     Vector2f tangent = smallestAxis.perp().normalized();
     float velAlongTangent = relativeVelocity.dot(tangent);
 
@@ -392,18 +381,14 @@ void Physics::checkCollision(Entity& a, Entity& b)
         tangentImpulse = tangent * jt;
     }
 
-    // Total impulse applied
     Vector2f totalImpulse = normalImpulse + tangentImpulse;
 
-    // Apply linear velocity changes
     a.velocity -= totalImpulse * a.invMass;
     b.velocity += totalImpulse * b.invMass;
 
-    // Apply angular velocity changes (Torque = r x J)
     a.angularVelocity -= rA.cross(totalImpulse) * a.invInertia;
     b.angularVelocity += rB.cross(totalImpulse) * b.invInertia;
 
-    // Clamp angular velocities for stability, or zero them out if rotation is frozen/static
     if (a.isAxisAligned || a.isStatic) a.angularVelocity = 0.0f;
     else a.angularVelocity = std::clamp(a.angularVelocity, -Config::Physics::MAX_ANGULAR_SPEED, Config::Physics::MAX_ANGULAR_SPEED);
 

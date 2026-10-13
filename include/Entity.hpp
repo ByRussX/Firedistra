@@ -1,6 +1,7 @@
 #pragma once
 #include <SDL3/SDL.h>
 #include <array>
+#include <vector>
 #include "Math.hpp"
 #include "Hitbox.hpp"
 #include "Config.hpp"
@@ -23,7 +24,6 @@ public:
     float inertia;
     float invInertia;
 
-    Hitbox hitbox;
     bool isFlipped;
 
     Vector2f textureSize;
@@ -49,12 +49,13 @@ public:
     void setStatic(bool staticState);
     void setFreezeRotation(bool freezeRot);
     
-    void setHitbox(const Vector2f& offset, const Vector2f& size);
-    SDL_FRect getAbsoluteHitbox() const;
-    std::array<Vector2f, 4> getHitboxVertices() const;
+    void addHitbox(const Vector2f& offset, const Vector2f& size);
+    void clearHitboxes();
+    std::vector<std::array<Vector2f, 4>> getAllHitboxVertices() const;
 
     void updateInertia();
 
 private:
+    std::vector<Hitbox> hitboxes;
     SDL_FRect getSourceRect() const;
 };

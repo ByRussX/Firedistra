@@ -187,8 +187,9 @@ void Engine::instantiateEntity(bool isIntangible, bool isStatic, bool isAxisAlig
     entities.emplace_back(spriteSize, defaultTexture, spawnPosition, Config::Physics::DEFAULT_MASS, isIntangible, isStatic, isAxisAligned);
     Entity &newEntity = entities.back();
 
-    // Set hitbox
-    newEntity.setHitbox(Vector2f(0.0f, 0.0f), spriteSize);
+    newEntity.addHitbox(Vector2f(34.0f, 1.0f), Vector2f(114.0f, 116.0f));
+    newEntity.addHitbox(Vector2f(2.0f, 117.0f), Vector2f(68.0f, 44.0f));
+    newEntity.addHitbox(Vector2f(77.0f, 117.0f), Vector2f(73.0f, 61.0f));
 
     // Set random color
     newEntity.rgb[0] = static_cast<Uint8>(distColor(rng));
@@ -202,9 +203,8 @@ void Engine::instantiateEntity(bool isIntangible, bool isStatic, bool isAxisAlig
         float dirY = (distSign(rng) == 0) ? -1.0f : 1.0f;
         Vector2f dir(dirX, dirY);
 
-        // Add velocity
-        newEntity.velocity.x += dir.normalized().x * Config::Entity::INITIAL_SPEED;
-        newEntity.velocity.y += dir.normalized().y * Config::Entity::INITIAL_SPEED;
+        // Assign normalized velocity directly to the vector
+        newEntity.velocity = dir.normalized() * Config::Entity::INITIAL_SPEED;
     }
     else
     {

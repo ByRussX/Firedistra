@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <array>
 #include "Entity.hpp"
 
 class Physics
@@ -11,4 +12,5 @@ public:
 
 private:
     static void checkCollision(Entity& a, Entity& b);
+    static void resolveSingleSAT(Entity& a, Entity& b, const std::array<Vector2f, 4>& vertA, const std::array<Vector2f, 4>& vertB);
 };

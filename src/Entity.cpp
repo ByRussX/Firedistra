@@ -199,7 +199,7 @@ void Entity::setFreezeRotation(bool freezeRot)
 // Get absolute position for the hitbox vertices on screen
 std::array<Vector2f, 4> Entity::getHitboxVertices() const
 {
-    return hitbox.getVertices(position, angle);
+    return hitbox.getVertices(position, angle, isFlipped);
 }
 
 // Set hitbox for the entity and recalculate inertia
